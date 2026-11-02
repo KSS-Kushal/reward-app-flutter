@@ -9,4 +9,7 @@ abstract final class StorageKeys {
   static const onboardingCompleted = 'prefs.onboarding_completed';
   static const pushNotificationsEnabled = 'prefs.push_notifications_enabled';
   static const soundEffectsEnabled = 'prefs.sound_effects_enabled';
+
+  // Cached copy of the admin ad settings (`GET /ads/config`).
+  static const adSettings = 'cache.ad_settings';
 }

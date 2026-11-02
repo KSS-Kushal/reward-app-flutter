@@ -36,6 +36,9 @@ final getCheckInStatusProvider = Provider(
 final claimCheckInProvider = Provider(
   (ref) => ClaimCheckIn(ref.watch(rewardsRepositoryProvider)),
 );
+final completeRewardClaimProvider = Provider(
+  (ref) => CompleteRewardClaim(ref.watch(rewardsRepositoryProvider)),
+);
 final getSpinWheelProvider = Provider(
   (ref) => GetSpinWheel(ref.watch(rewardsRepositoryProvider)),
 );

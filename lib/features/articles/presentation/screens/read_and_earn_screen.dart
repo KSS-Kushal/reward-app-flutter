@@ -6,6 +6,8 @@ import '../../../../app/router/route_names.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_dimensions.dart';
 import '../../../../app/theme/app_text_styles.dart';
+import '../../../../core/ads/ad_models.dart';
+import '../../../../core/ads/widgets/banner_ad_slot.dart';
 import '../../../../core/widgets/app_card.dart';
 import '../../../../core/widgets/app_empty_view.dart';
 import '../../../../core/widgets/app_loader.dart';
@@ -29,6 +31,7 @@ class ReadAndEarnScreen extends ConsumerWidget {
 
     return GradientPageScaffold(
       title: 'Read & Earn',
+      bottomBar: const BannerAdSlot(placement: AdPlacement.article),
       body: PaginatedListView(
         value: articles,
         onRefresh: () async {

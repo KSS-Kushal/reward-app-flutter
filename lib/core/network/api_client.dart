@@ -189,6 +189,7 @@ class ApiClient {
     final status = error.response?.statusCode;
     final body = error.response?.data;
     final message = ApiResponse.errorMessage(body);
+    final code = ApiResponse.errorCode(body);
 
     if (status == 401) {
       return message == null
@@ -199,12 +200,14 @@ class ApiClient {
       return ValidationException(
         message: message ?? const ValidationException().message,
         fieldErrors: ApiResponse.fieldErrors(body),
+        code: code,
         cause: error,
       );
     }
     return ServerException(
       message: message ?? const ServerException().message,
       statusCode: status,
+      code: code,
       cause: error,
     );
   }

@@ -15,6 +15,7 @@ class GradientPageScaffold extends StatelessWidget {
     this.showBack = true,
     this.headerBottom,
     this.floatingActionButton,
+    this.bottomBar,
     super.key,
   });
 
@@ -26,6 +27,9 @@ class GradientPageScaffold extends StatelessWidget {
   /// Optional content rendered inside the header (e.g. a balance card).
   final Widget? headerBottom;
   final Widget? floatingActionButton;
+
+  /// Pinned below [body], e.g. a banner ad. It owns the bottom safe area.
+  final Widget? bottomBar;
 
   @override
   Widget build(BuildContext context) {
@@ -94,7 +98,14 @@ class GradientPageScaffold extends StatelessWidget {
                   borderRadius: AppRadius.sheetTop,
                   child: ColoredBox(
                     color: AppColors.background,
-                    child: SizedBox.expand(child: body),
+                    child: bottomBar == null
+                        ? SizedBox.expand(child: body)
+                        : Column(
+                            children: [
+                              Expanded(child: body),
+                              bottomBar!,
+                            ],
+                          ),
                   ),
                 ),
               ),

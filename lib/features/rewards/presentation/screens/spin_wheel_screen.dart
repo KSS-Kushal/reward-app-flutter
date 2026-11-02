@@ -9,9 +9,12 @@ import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/async_value_view.dart';
 import '../../../../core/widgets/gradient_page_scaffold.dart';
 import '../../../../shared/components/reward_result_dialog.dart';
+import '../../domain/entities/reward_claim.dart';
 import '../../domain/entities/spin_wheel.dart';
 import '../providers/reward_game_controllers.dart';
+import '../widgets/pending_reward_card.dart';
 import '../widgets/spin_wheel_view.dart';
+import '../widgets/watch_ad_reward_dialog.dart';
 
 class SpinWheelScreen extends ConsumerStatefulWidget {
   const SpinWheelScreen({super.key});
@@ -57,16 +60,29 @@ class _SpinWheelScreenState extends ConsumerState<SpinWheelScreen>
           );
       await _controller.forward(from: 0);
       if (!mounted) return;
-      await RewardResultDialog.show(
-        context,
-        title: result.coinsWon > 0 ? 'You won!' : 'So close!',
-        coins: result.coinsWon,
-        message: result.coinsWon > 0 ? null : 'Better luck on your next spin.',
-      );
+      final pending = result.pendingReward;
+      if (pending == null) {
+        await RewardResultDialog.show(
+          context,
+          title: 'So close!',
+          coins: 0,
+          message: 'Better luck on your next spin.',
+        );
+      } else {
+        await _collect(pending);
+      }
     } on Object catch (error) {
       if (mounted) context.showErrorSnack(error);
     } finally {
       if (mounted) setState(() => _spinning = false);
+    }
+  }
+
+  /// Won coins are credited after a rewarded ad.
+  Future<void> _collect(PendingReward pending) async {
+    await WatchAdRewardDialog.show(context, reward: pending, title: 'You won!');
+    if (mounted) {
+      await ref.read(spinWheelControllerProvider.notifier).reload();
     }
   }
 
@@ -92,6 +108,14 @@ class _SpinWheelScreenState extends ConsumerState<SpinWheelScreen>
               textAlign: TextAlign.center,
               style: AppTextStyles.bodySmall,
             ),
+            if (data.pendingRewards.isNotEmpty && !_spinning) ...[
+              const SizedBox(height: AppSpacing.lg),
+              PendingRewardCard(
+                reward: data.pendingRewards.first,
+                count: data.pendingRewards.length,
+                onCollect: () => _collect(data.pendingRewards.first),
+              ),
+            ],
             const SizedBox(height: AppSpacing.xxl),
             ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 360),

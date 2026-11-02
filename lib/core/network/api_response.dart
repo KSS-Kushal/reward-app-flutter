@@ -62,6 +62,12 @@ abstract final class ApiResponse {
     return null;
   }
 
+  /// Extracts the machine-readable error `code` (e.g. `ALREADY_CLAIMED`).
+  static String? errorCode(Object? body) {
+    if (body is Map<String, dynamic>) return body.readStringOrNull(_codeKey);
+    return null;
+  }
+
   /// Extracts per-field validation errors from an error body, if present.
   static Map<String, String> fieldErrors(Object? body) {
     if (body is! Map<String, dynamic>) return const {};

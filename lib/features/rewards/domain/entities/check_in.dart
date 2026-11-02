@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
 
+import 'reward_claim.dart';
+
 enum CheckInDayState { claimed, today, upcoming, missed }
 
 /// One day of the weekly check-in streak.
@@ -25,6 +27,7 @@ class CheckInStatus {
     required this.todayReward,
     required this.days,
     this.nextCheckInAt,
+    this.pendingReward,
   });
 
   final int currentStreak;
@@ -34,12 +37,8 @@ class CheckInStatus {
 
   /// When the next check-in unlocks (if already claimed today).
   final DateTime? nextCheckInAt;
-}
 
-@immutable
-class CheckInResult {
-  const CheckInResult({required this.coinsEarned, required this.newStreak});
-
-  final int coinsEarned;
-  final int newStreak;
+  /// Today's check-in was started but its ad not watched yet. The check-in
+  /// is complete only once this claim is completed.
+  final PendingReward? pendingReward;
 }

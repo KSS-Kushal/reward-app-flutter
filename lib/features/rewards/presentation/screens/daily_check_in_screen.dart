@@ -10,9 +10,9 @@ import '../../../../core/widgets/app_card.dart';
 import '../../../../core/widgets/async_value_view.dart';
 import '../../../../core/widgets/coin_icon.dart';
 import '../../../../core/widgets/gradient_page_scaffold.dart';
-import '../../../../shared/components/reward_result_dialog.dart';
 import '../../domain/entities/check_in.dart';
 import '../providers/reward_game_controllers.dart';
+import '../widgets/watch_ad_reward_dialog.dart';
 
 class DailyCheckInScreen extends ConsumerStatefulWidget {
   const DailyCheckInScreen({super.key});
@@ -24,17 +24,22 @@ class DailyCheckInScreen extends ConsumerStatefulWidget {
 class _DailyCheckInScreenState extends ConsumerState<DailyCheckInScreen> {
   bool _claiming = false;
 
+  /// Starts the check-in, then the coins wait for a rewarded ad. The
+  /// backend completes the check-in only after the ad.
   Future<void> _claim() async {
+    final controller = ref.read(checkInControllerProvider.notifier);
     setState(() => _claiming = true);
     try {
-      final result = await ref.read(checkInControllerProvider.notifier).claim();
+      final pending = await controller.claim();
       if (!mounted) return;
-      await RewardResultDialog.show(
+      setState(() => _claiming = false);
+      final claimed = await WatchAdRewardDialog.show(
         context,
-        title: 'Check-in complete!',
-        coins: result.coinsEarned,
-        message: "You're on a ${result.newStreak}-day streak. Keep it going!",
+        reward: pending,
+        title: "Today's check-in reward",
+        message: 'Watch a short ad to complete your check-in and collect.',
       );
+      if (claimed != null && mounted) await controller.reload();
     } on Object catch (error) {
       if (mounted) context.showErrorSnack(error);
     } finally {
@@ -62,17 +67,21 @@ class _DailyCheckInScreenState extends ConsumerState<DailyCheckInScreen> {
             AppButton(
               label: data.claimedToday
                   ? 'Come back tomorrow'
+                  : data.pendingReward != null
+                  ? 'Watch ad to collect ${data.todayReward} coins'
                   : 'Claim ${data.todayReward} coins',
               icon: data.claimedToday
                   ? const Icon(Icons.check_circle_rounded)
+                  : data.pendingReward != null
+                  ? const Icon(Icons.play_circle_fill_rounded)
                   : null,
               isLoading: _claiming,
               onPressed: data.claimedToday ? null : _claim,
             ),
             const SizedBox(height: AppSpacing.lg),
             const Text(
-              'Check in every day to grow your streak. Missing a day resets '
-              'it, and day 7 pays the biggest reward.',
+              'Check in every day and watch a short ad to collect. Missing a '
+              'day resets your streak, and day 7 pays the biggest reward.',
               textAlign: TextAlign.center,
               style: AppTextStyles.bodySmall,
             ),

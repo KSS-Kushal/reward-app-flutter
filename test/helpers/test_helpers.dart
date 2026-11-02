@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kavodnik/app/theme/app_theme.dart';
+import 'package:kavodnik/core/ads/ad_providers.dart';
+import 'package:kavodnik/core/ads/ad_service.dart';
 import 'package:kavodnik/core/di/core_providers.dart';
 import 'package:kavodnik/core/mock/mock_latency.dart';
 import 'package:kavodnik/core/storage/local_storage_service.dart';
@@ -20,6 +22,7 @@ void disableMockLatency() => MockLatency.value = Duration.zero;
 List<Override> testOverrides({
   SecureStorageService? secureStorage,
   GoogleAuthService? googleAuthService,
+  AdService? adService,
 }) => [
   secureStorageProvider.overrideWithValue(
     secureStorage ?? InMemorySecureStorageService(),
@@ -29,11 +32,19 @@ List<Override> testOverrides({
   googleAuthServiceProvider.overrideWithValue(
     googleAuthService ?? FakeGoogleAuthService(),
   ),
+  // No ad SDKs in tests; rewarded ads count as watched.
+  adServiceProvider.overrideWithValue(adService ?? const DisabledAdService()),
 ];
 
-ProviderContainer createTestContainer({List<Override> overrides = const []}) {
+ProviderContainer createTestContainer({
+  List<Override> overrides = const [],
+  AdService? adService,
+}) {
   final container = ProviderContainer(
-    overrides: [...testOverrides(), ...overrides],
+    overrides: [
+      ...testOverrides(adService: adService),
+      ...overrides,
+    ],
     retry: (_, _) => null,
   );
   addTearDown(container.dispose);

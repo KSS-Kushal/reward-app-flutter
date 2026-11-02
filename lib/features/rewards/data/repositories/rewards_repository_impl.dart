@@ -1,5 +1,7 @@
+import '../../../../core/ads/ad_models.dart';
 import '../../domain/entities/captcha.dart';
 import '../../domain/entities/check_in.dart';
+import '../../domain/entities/reward_claim.dart';
 import '../../domain/entities/reward_summary.dart';
 import '../../domain/entities/reward_task.dart';
 import '../../domain/entities/scratch_card.dart';
@@ -25,7 +27,18 @@ class RewardsRepositoryImpl implements RewardsRepository {
   Future<CheckInStatus> getCheckInStatus() => _remote.getCheckInStatus();
 
   @override
-  Future<CheckInResult> claimCheckIn() => _remote.claimCheckIn();
+  Future<PendingReward> claimCheckIn() => _remote.claimCheckIn();
+
+  @override
+  Future<ClaimedReward> completeRewardClaim({
+    required String claimId,
+    required AdUnit adUnit,
+    required AdPlacement placement,
+  }) => _remote.completeRewardClaim(
+    claimId: claimId,
+    adUnit: adUnit,
+    placement: placement,
+  );
 
   @override
   Future<SpinWheelConfig> getSpinWheel() => _remote.getSpinWheel();

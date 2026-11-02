@@ -1,17 +1,23 @@
 import 'dart:math';
 
+import '../../../../core/ads/ad_models.dart';
 import '../../../../core/errors/errors.dart';
 import '../../../../core/mock/mock_latency.dart';
 import '../../../wallet/data/datasources/mock_wallet_ledger.dart';
 import '../../../wallet/domain/entities/transaction.dart';
 import '../../domain/entities/check_in.dart';
+import '../../domain/entities/reward_claim.dart';
 import '../../domain/entities/reward_task.dart';
+import '../models/reward_claim_models.dart';
 import '../models/reward_game_models.dart';
 import '../models/reward_task_model.dart';
 import 'rewards_remote_data_source.dart';
 
 /// Simulates the backend reward engine: daily limits, streaks and random
 /// prizes all live here (server side), never in the UI.
+///
+/// Check-in, spin and scratch prizes become *pending claims*; coins are
+/// credited only by [completeRewardClaim], after a rewarded ad.
 class RewardsMockDataSource implements RewardsRemoteDataSource {
   RewardsMockDataSource(
     this._ledger, {
@@ -57,6 +63,11 @@ class RewardsMockDataSource implements RewardsRemoteDataSource {
   int _captchaSequence = 0;
   String? _captchaId;
   String? _captchaCode;
+  int _claimSequence = 0;
+
+  /// Pending claims in creation order, with what completing them does.
+  final _claims =
+      <String, ({PendingRewardModel reward, void Function() apply})>{};
 
   DateTime get _today {
     final now = _clock();
@@ -72,7 +83,29 @@ class RewardsMockDataSource implements RewardsRemoteDataSource {
     _spinsUsed = 0;
     _scratchUsed = 0;
     _captchaUsed = 0;
+    // Unclaimed prizes expire at the end of the day.
+    _claims.clear();
   }
+
+  PendingRewardModel _createClaim(
+    RewardClaimSource source,
+    int coins,
+    void Function() apply,
+  ) {
+    final reward = PendingRewardModel(
+      claimId: 'claim_${++_claimSequence}',
+      source: source,
+      coins: coins,
+      expiresAt: _day.add(const Duration(days: 1)),
+    );
+    _claims[reward.claimId] = (reward: reward, apply: apply);
+    return reward;
+  }
+
+  List<PendingRewardModel> _pending(RewardClaimSource source) => [
+    for (final claim in _claims.values)
+      if (claim.reward.source == source) claim.reward,
+  ];
 
   int get _todayCheckInReward =>
       checkInRewards[_streak % checkInRewards.length];
@@ -232,11 +265,12 @@ class RewardsMockDataSource implements RewardsRemoteDataSource {
       todayReward: checkInRewards[todayIndex],
       days: days,
       nextCheckInAt: _claimedToday ? _day.add(const Duration(days: 1)) : null,
+      pendingReward: _pending(RewardClaimSource.checkIn).firstOrNull,
     );
   }
 
   @override
-  Future<CheckInResultModel> claimCheckIn() async {
+  Future<PendingRewardModel> claimCheckIn() async {
     await _request();
     if (_claimedToday) {
       throw const ValidationException(
@@ -244,16 +278,53 @@ class RewardsMockDataSource implements RewardsRemoteDataSource {
         code: 'already_claimed',
       );
     }
+    // Idempotent: a started check-in is returned again.
+    final existing = _pending(RewardClaimSource.checkIn).firstOrNull;
+    if (existing != null) return existing;
+
     final coins = _todayCheckInReward;
-    _streak += 1;
-    _claimedToday = true;
-    _ledger.credit(
-      source: TransactionSource.checkIn,
-      title: 'Daily Check-in',
-      amount: coins,
-      description: 'Day $_streak streak',
+    return _createClaim(RewardClaimSource.checkIn, coins, () {
+      _streak += 1;
+      _claimedToday = true;
+      _ledger.credit(
+        source: TransactionSource.checkIn,
+        title: 'Daily Check-in',
+        amount: coins,
+        description: 'Day $_streak streak',
+      );
+    });
+  }
+
+  // -------------------------------------------------------------------------
+  // Reward claims (completed after a rewarded ad)
+  // -------------------------------------------------------------------------
+
+  @override
+  Future<ClaimedRewardModel> completeRewardClaim({
+    required String claimId,
+    required AdUnit adUnit,
+    required AdPlacement placement,
+  }) async {
+    await _request();
+    final claim = _claims.remove(claimId);
+    if (claim == null) {
+      throw const ValidationException(
+        message: 'This reward has expired or was already collected.',
+        code: 'claim_not_found',
+      );
+    }
+    claim.apply();
+    final reward = claim.reward;
+    final isCheckIn = reward.source == RewardClaimSource.checkIn;
+    return ClaimedRewardModel(
+      claimId: reward.claimId,
+      source: reward.source,
+      coinsEarned: reward.coins,
+      newStreak: isCheckIn ? _streak : null,
+      message: isCheckIn
+          ? "You're on a $_streak-day streak. Keep it going!"
+          : 'Coins added to your wallet.',
     );
-    return CheckInResultModel(coinsEarned: coins, newStreak: _streak);
   }
 
   // -------------------------------------------------------------------------
@@ -267,6 +338,7 @@ class RewardsMockDataSource implements RewardsRemoteDataSource {
       segments: _segments,
       remainingSpins: maxSpinsPerDay - _spinsUsed,
       maxSpinsPerDay: maxSpinsPerDay,
+      pendingRewards: _pending(RewardClaimSource.spinWheel),
     );
   }
 
@@ -281,17 +353,22 @@ class RewardsMockDataSource implements RewardsRemoteDataSource {
     }
     final segment = _segments[_weightedIndex(_segmentWeights)];
     _spinsUsed += 1;
-    if (segment.coins > 0) {
-      _ledger.credit(
-        source: TransactionSource.spinWheel,
-        title: 'Spin Wheel',
-        amount: segment.coins,
-      );
-    }
+    final pending = segment.coins > 0
+        ? _createClaim(
+            RewardClaimSource.spinWheel,
+            segment.coins,
+            () => _ledger.credit(
+              source: TransactionSource.spinWheel,
+              title: 'Spin Wheel',
+              amount: segment.coins,
+            ),
+          )
+        : null;
     return SpinResultModel(
       segmentId: segment.id,
       coinsWon: segment.coins,
       remainingSpins: maxSpinsPerDay - _spinsUsed,
+      pendingReward: pending,
     );
   }
 
@@ -320,6 +397,7 @@ class RewardsMockDataSource implements RewardsRemoteDataSource {
       cardId: _currentCardId,
       remainingCards: scratchCardsPerDay - _scratchUsed,
       totalCards: scratchCardsPerDay,
+      pendingRewards: _pending(RewardClaimSource.scratchCard),
     );
   }
 
@@ -334,16 +412,21 @@ class RewardsMockDataSource implements RewardsRemoteDataSource {
     }
     final coins = const [5, 10, 10, 15, 20, 25, 30, 50][_random.nextInt(8)];
     _scratchUsed += 1;
-    _ledger.credit(
-      source: TransactionSource.scratchCard,
-      title: 'Scratch Card',
-      amount: coins,
+    final pending = _createClaim(
+      RewardClaimSource.scratchCard,
+      coins,
+      () => _ledger.credit(
+        source: TransactionSource.scratchCard,
+        title: 'Scratch Card',
+        amount: coins,
+      ),
     );
     return ScratchResultModel(
       cardId: cardId,
       coinsWon: coins,
       remainingCards: scratchCardsPerDay - _scratchUsed,
-      message: coins >= 30 ? 'Jackpot! Lucky you!' : 'Nice! Coins added.',
+      message: coins >= 30 ? 'Jackpot! Lucky you!' : 'Nice one!',
+      pendingReward: pending,
     );
   }
 

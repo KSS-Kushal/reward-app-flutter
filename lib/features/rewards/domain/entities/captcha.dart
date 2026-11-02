@@ -33,10 +33,16 @@ class CaptchaResult {
     required this.coinsEarned,
     required this.remainingAttempts,
     required this.message,
+    this.nextChallengeInSeconds = defaultCooldownSeconds,
   });
+
+  static const defaultCooldownSeconds = 10;
 
   final bool isCorrect;
   final int coinsEarned;
   final int remainingAttempts;
   final String message;
+
+  /// Wait before the next captcha can be loaded (set by the backend).
+  final int nextChallengeInSeconds;
 }

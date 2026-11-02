@@ -1,6 +1,8 @@
+import '../../../../core/ads/ad_models.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/network/api_endpoints.dart';
 import '../../../../core/network/api_response.dart';
+import '../models/reward_claim_models.dart';
 import '../models/reward_game_models.dart';
 import '../models/reward_task_model.dart';
 
@@ -10,7 +12,13 @@ abstract interface class RewardsRemoteDataSource {
   Future<List<RewardActivityModel>> getHistory();
 
   Future<CheckInStatusModel> getCheckInStatus();
-  Future<CheckInResultModel> claimCheckIn();
+  Future<PendingRewardModel> claimCheckIn();
+
+  Future<ClaimedRewardModel> completeRewardClaim({
+    required String claimId,
+    required AdUnit adUnit,
+    required AdPlacement placement,
+  });
 
   Future<SpinWheelConfigModel> getSpinWheel();
   Future<SpinResultModel> spin();
@@ -64,9 +72,24 @@ class RewardsApiDataSource implements RewardsRemoteDataSource {
   );
 
   @override
-  Future<CheckInResultModel> claimCheckIn() => _client.post(
+  Future<PendingRewardModel> claimCheckIn() => _client.post(
     ApiEndpoints.checkInClaim,
-    parser: (data) => CheckInResultModel.fromJson(_object(data)),
+    parser: (data) => PendingRewardModel.fromJson(_object(data)),
+  );
+
+  @override
+  Future<ClaimedRewardModel> completeRewardClaim({
+    required String claimId,
+    required AdUnit adUnit,
+    required AdPlacement placement,
+  }) => _client.post(
+    ApiEndpoints.rewardClaimComplete(claimId),
+    body: {
+      'adNetwork': adUnit.network.name,
+      'adUnitId': adUnit.id,
+      'placement': placement.name,
+    },
+    parser: (data) => ClaimedRewardModel.fromJson(_object(data)),
   );
 
   @override

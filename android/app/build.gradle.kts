@@ -1,4 +1,5 @@
 import java.io.FileInputStream
+import java.util.Base64
 import java.util.Properties
 
 plugins {
@@ -17,6 +18,27 @@ if (hasReleaseKeystore) {
     keystoreProperties.load(FileInputStream(keystorePropertiesFile))
 }
 
+// Values from --dart-define / --dart-define-from-file (env/*.json) reach
+// Gradle as a comma-separated list of base64 encoded KEY=VALUE pairs.
+val dartDefines: Map<String, String> =
+    (project.findProperty("dart-defines") as String?)
+        ?.split(",")
+        ?.mapNotNull { entry ->
+            val pair = String(Base64.getDecoder().decode(entry), Charsets.UTF_8)
+            val index = pair.indexOf('=')
+            if (index <= 0) null else pair.substring(0, index) to pair.substring(index + 1)
+        }
+        ?.toMap()
+        ?: emptyMap()
+
+// AdMob app id for the manifest. Without ADMOB_APP_ID, Google's public test
+// app id is used, which only ever serves test ads.
+val admobTestAppId = "ca-app-pub-3940256099942544~3347511713"
+val admobAppId = dartDefines["ADMOB_APP_ID"]?.takeIf { it.isNotBlank() } ?: admobTestAppId
+if (dartDefines["ENV"] == "production" && admobAppId == admobTestAppId) {
+    logger.warn("WARNING: ADMOB_APP_ID is not set for a production build; using the AdMob test app id.")
+}
+
 android {
     namespace = "com.kavodnik.app"
     compileSdk = flutter.compileSdkVersion
@@ -33,6 +55,7 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        manifestPlaceholders["admobAppId"] = admobAppId
     }
 
     signingConfigs {

@@ -4,6 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_dimensions.dart';
 import '../../../../app/theme/app_text_styles.dart';
+import '../../../../core/ads/ad_models.dart';
+import '../../../../core/ads/widgets/banner_ad_slot.dart';
+import '../../../../core/ads/widgets/native_ad_slot.dart';
 import '../../../../core/errors/errors.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../core/widgets/app_button.dart';
@@ -29,6 +32,7 @@ class QuizScreen extends ConsumerWidget {
     final session = ref.watch(provider);
     return GradientPageScaffold(
       title: type.title,
+      bottomBar: const BannerAdSlot(placement: AdPlacement.quiz),
       body: AsyncValueView(
         value: session,
         onRetry: () => ref.invalidate(provider),
@@ -60,88 +64,101 @@ class _QuizPlayView extends ConsumerWidget {
     final submitting = session.phase == QuizPhase.submitting;
     final accent = type.accentColor;
 
-    return ListView(
-      padding: const EdgeInsets.all(AppSpacing.page),
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                'Question ${session.index + 1} of '
-                '${session.quiz.questions.length}',
-                style: AppTextStyles.bodyMedium.copyWith(
-                  color: AppColors.textSecondary,
+    // A native ad fills the space left below short questions.
+    return CustomScrollView(
+      slivers: [
+        SliverPadding(
+          padding: const EdgeInsets.all(AppSpacing.page),
+          sliver: SliverList.list(
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Question ${session.index + 1} of '
+                      '${session.quiz.questions.length}',
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ),
+                  if (session.quiz.isTimed)
+                    _TimerChip(seconds: session.secondsLeft),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              ClipRRect(
+                borderRadius: AppRadius.pillAll,
+                child: LinearProgressIndicator(
+                  value: session.progress,
+                  minHeight: 6,
+                  color: accent,
+                  backgroundColor: AppColors.border,
                 ),
               ),
-            ),
-            if (session.quiz.isTimed) _TimerChip(seconds: session.secondsLeft),
-          ],
-        ),
-        const SizedBox(height: AppSpacing.sm),
-        ClipRRect(
-          borderRadius: AppRadius.pillAll,
-          child: LinearProgressIndicator(
-            value: session.progress,
-            minHeight: 6,
-            color: accent,
-            backgroundColor: AppColors.border,
+              const SizedBox(height: AppSpacing.xl),
+              AppCard(
+                padding: const EdgeInsets.all(AppSpacing.xl),
+                child: Text(question.text, style: AppTextStyles.titleLarge),
+              ),
+              const SizedBox(height: AppSpacing.xl),
+              if (question.answerType == QuizAnswerType.singleChoice)
+                for (var i = 0; i < question.options.length; i++) ...[
+                  QuizOptionCard(
+                    label: _letters[i % _letters.length],
+                    text: question.options[i].text,
+                    accentColor: accent,
+                    state:
+                        session.currentAnswer?.optionId ==
+                            question.options[i].id
+                        ? QuizOptionState.selected
+                        : QuizOptionState.idle,
+                    onTap: submitting
+                        ? null
+                        : () => controller.selectOption(question.options[i].id),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                ]
+              else
+                AppTextField(
+                  // New field per question so the text resets.
+                  key: ValueKey(question.id),
+                  label: 'Your answer',
+                  hint: 'Type your answer',
+                  textInputAction: TextInputAction.done,
+                  onChanged: controller.setTextAnswer,
+                  onSubmitted: (_) {
+                    if (session.canAdvance) controller.next();
+                  },
+                ),
+              if (session.submitError != null) ...[
+                const SizedBox(height: AppSpacing.sm),
+                Text(
+                  userMessageFor(session.submitError!),
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: AppColors.error,
+                  ),
+                ),
+              ],
+              const SizedBox(height: AppSpacing.xl),
+              AppButton(
+                label: session.isLastQuestion ? 'Submit' : 'Next',
+                backgroundColor: accent,
+                isLoading: submitting,
+                onPressed: session.canAdvance || session.submitError != null
+                    ? controller.next
+                    : null,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              Text(
+                'Earn ${session.quiz.rewardPerCorrect} coins for every correct answer',
+                textAlign: TextAlign.center,
+                style: AppTextStyles.bodySmall,
+              ),
+            ],
           ),
         ),
-        const SizedBox(height: AppSpacing.xl),
-        AppCard(
-          padding: const EdgeInsets.all(AppSpacing.xl),
-          child: Text(question.text, style: AppTextStyles.titleLarge),
-        ),
-        const SizedBox(height: AppSpacing.xl),
-        if (question.answerType == QuizAnswerType.singleChoice)
-          for (var i = 0; i < question.options.length; i++) ...[
-            QuizOptionCard(
-              label: _letters[i % _letters.length],
-              text: question.options[i].text,
-              accentColor: accent,
-              state: session.currentAnswer?.optionId == question.options[i].id
-                  ? QuizOptionState.selected
-                  : QuizOptionState.idle,
-              onTap: submitting
-                  ? null
-                  : () => controller.selectOption(question.options[i].id),
-            ),
-            const SizedBox(height: AppSpacing.md),
-          ]
-        else
-          AppTextField(
-            // New field per question so the text resets.
-            key: ValueKey(question.id),
-            label: 'Your answer',
-            hint: 'Type your answer',
-            textInputAction: TextInputAction.done,
-            onChanged: controller.setTextAnswer,
-            onSubmitted: (_) {
-              if (session.canAdvance) controller.next();
-            },
-          ),
-        if (session.submitError != null) ...[
-          const SizedBox(height: AppSpacing.sm),
-          Text(
-            userMessageFor(session.submitError!),
-            style: AppTextStyles.bodySmall.copyWith(color: AppColors.error),
-          ),
-        ],
-        const SizedBox(height: AppSpacing.xl),
-        AppButton(
-          label: session.isLastQuestion ? 'Submit' : 'Next',
-          backgroundColor: accent,
-          isLoading: submitting,
-          onPressed: session.canAdvance || session.submitError != null
-              ? controller.next
-              : null,
-        ),
-        const SizedBox(height: AppSpacing.md),
-        Text(
-          'Earn ${session.quiz.rewardPerCorrect} coins for every correct answer',
-          textAlign: TextAlign.center,
-          style: AppTextStyles.bodySmall,
-        ),
+        const AdaptiveNativeAdSliver(placement: AdPlacement.quiz),
       ],
     );
   }

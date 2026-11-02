@@ -7,8 +7,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app/app.dart';
+import 'app/config/ad_config.dart';
 import 'app/config/api_config.dart';
 import 'app/config/app_config.dart';
+import 'core/ads/ad_providers.dart';
 import 'core/di/core_providers.dart';
 import 'core/utils/app_logger.dart';
 
@@ -38,13 +40,22 @@ Future<void> main() async {
     '${AppConfig.isGoogleSignInConfigured ? AppConfig.googleServerClientId : '<NOT SET>'})',
   );
 
-  runApp(
-    ProviderScope(
-      // Failed requests surface an error view with a retry button instead of
-      // being retried silently in the background.
-      retry: (_, _) => null,
-      overrides: [sharedPreferencesProvider.overrideWithValue(preferences)],
-      child: const KavodnikApp(),
-    ),
+  AppLogger.info(
+    'Ads: ${AdConfig.adsEnabled ? 'on' : 'off'}'
+    '${AdConfig.useTestAds ? ' (test ads)' : ''}; settings from the backend',
   );
+
+  final container = ProviderContainer(
+    // Failed requests surface an error view with a retry button instead of
+    // being retried silently in the background.
+    retry: (_, _) => null,
+    overrides: [sharedPreferencesProvider.overrideWithValue(preferences)],
+  );
+
+  runApp(
+    UncontrolledProviderScope(container: container, child: const KavodnikApp()),
+  );
+
+  // Ad SDKs start in the background; the app never waits for them.
+  unawaited(container.read(adServiceProvider).initialize());
 }

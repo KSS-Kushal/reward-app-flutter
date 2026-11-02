@@ -3,6 +3,7 @@ import '../../domain/entities/captcha.dart';
 import '../../domain/entities/check_in.dart';
 import '../../domain/entities/scratch_card.dart';
 import '../../domain/entities/spin_wheel.dart';
+import 'reward_claim_models.dart';
 
 // ---------------------------------------------------------------------------
 // Check-in
@@ -40,6 +41,7 @@ class CheckInStatusModel extends CheckInStatus {
     required super.todayReward,
     required List<CheckInDayModel> super.days,
     super.nextCheckInAt,
+    PendingRewardModel? super.pendingReward,
   });
 
   factory CheckInStatusModel.fromJson(Map<String, dynamic> json) =>
@@ -49,6 +51,7 @@ class CheckInStatusModel extends CheckInStatus {
         todayReward: json.readInt('todayReward'),
         days: json.readList('days', CheckInDayModel.fromJson),
         nextCheckInAt: json.readDateTimeOrNull('nextCheckInAt'),
+        pendingReward: PendingRewardModel.maybe(json['pendingReward']),
       );
 
   Map<String, dynamic> toJson() => {
@@ -57,20 +60,8 @@ class CheckInStatusModel extends CheckInStatus {
     'todayReward': todayReward,
     'days': days.cast<CheckInDayModel>().map((d) => d.toJson()).toList(),
     'nextCheckInAt': nextCheckInAt?.toIso8601String(),
+    'pendingReward': (pendingReward as PendingRewardModel?)?.toJson(),
   };
-}
-
-class CheckInResultModel extends CheckInResult {
-  const CheckInResultModel({
-    required super.coinsEarned,
-    required super.newStreak,
-  });
-
-  factory CheckInResultModel.fromJson(Map<String, dynamic> json) =>
-      CheckInResultModel(
-        coinsEarned: json.readInt('coinsEarned'),
-        newStreak: json.readInt('newStreak'),
-      );
 }
 
 // ---------------------------------------------------------------------------
@@ -106,6 +97,7 @@ class SpinWheelConfigModel extends SpinWheelConfig {
     required List<SpinSegmentModel> super.segments,
     required super.remainingSpins,
     required super.maxSpinsPerDay,
+    List<PendingRewardModel> super.pendingRewards = const [],
   });
 
   factory SpinWheelConfigModel.fromJson(Map<String, dynamic> json) =>
@@ -113,6 +105,10 @@ class SpinWheelConfigModel extends SpinWheelConfig {
         segments: json.readList('segments', SpinSegmentModel.fromJson),
         remainingSpins: json.readInt('remainingSpins'),
         maxSpinsPerDay: json.readInt('maxSpinsPerDay'),
+        pendingRewards: json.readList(
+          'pendingRewards',
+          PendingRewardModel.fromJson,
+        ),
       );
 }
 
@@ -121,6 +117,7 @@ class SpinResultModel extends SpinResult {
     required super.segmentId,
     required super.coinsWon,
     required super.remainingSpins,
+    PendingRewardModel? super.pendingReward,
   });
 
   factory SpinResultModel.fromJson(Map<String, dynamic> json) =>
@@ -128,6 +125,7 @@ class SpinResultModel extends SpinResult {
         segmentId: json.readString('segmentId'),
         coinsWon: json.readInt('coinsWon'),
         remainingSpins: json.readInt('remainingSpins'),
+        pendingReward: PendingRewardModel.maybe(json['pendingReward']),
       );
 }
 
@@ -140,6 +138,7 @@ class ScratchCardStatusModel extends ScratchCardStatus {
     required super.remainingCards,
     required super.totalCards,
     super.cardId,
+    List<PendingRewardModel> super.pendingRewards = const [],
   });
 
   factory ScratchCardStatusModel.fromJson(Map<String, dynamic> json) =>
@@ -147,6 +146,10 @@ class ScratchCardStatusModel extends ScratchCardStatus {
         cardId: json.readStringOrNull('cardId'),
         remainingCards: json.readInt('remainingCards'),
         totalCards: json.readInt('totalCards'),
+        pendingRewards: json.readList(
+          'pendingRewards',
+          PendingRewardModel.fromJson,
+        ),
       );
 }
 
@@ -156,6 +159,7 @@ class ScratchResultModel extends ScratchResult {
     required super.coinsWon,
     required super.remainingCards,
     required super.message,
+    PendingRewardModel? super.pendingReward,
   });
 
   factory ScratchResultModel.fromJson(Map<String, dynamic> json) =>
@@ -164,6 +168,7 @@ class ScratchResultModel extends ScratchResult {
         coinsWon: json.readInt('coinsWon'),
         remainingCards: json.readInt('remainingCards'),
         message: json.readString('message'),
+        pendingReward: PendingRewardModel.maybe(json['pendingReward']),
       );
 }
 
@@ -197,6 +202,7 @@ class CaptchaResultModel extends CaptchaResult {
     required super.coinsEarned,
     required super.remainingAttempts,
     required super.message,
+    super.nextChallengeInSeconds,
   });
 
   factory CaptchaResultModel.fromJson(Map<String, dynamic> json) =>
@@ -205,5 +211,9 @@ class CaptchaResultModel extends CaptchaResult {
         coinsEarned: json.readInt('coinsEarned'),
         remainingAttempts: json.readInt('remainingAttempts'),
         message: json.readString('message'),
+        nextChallengeInSeconds: json.readInt(
+          'nextChallengeInSeconds',
+          fallback: CaptchaResult.defaultCooldownSeconds,
+        ),
       );
 }

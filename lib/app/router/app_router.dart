@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/ads/ad_providers.dart';
+import '../../core/ads/interstitial_route_observer.dart';
+
 import '../../features/articles/presentation/screens/article_detail_screen.dart';
 import '../../features/articles/presentation/screens/articles_screen.dart';
 import '../../features/articles/presentation/screens/read_and_earn_screen.dart';
@@ -48,6 +51,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     navigatorKey: _rootNavigatorKey,
     initialLocation: AppRoutes.splash,
     refreshListenable: authState,
+    observers: [
+      // Occasional interstitial between screens, only for signed-in users.
+      InterstitialRouteObserver(() {
+        if (authState.value is AuthAuthenticated) {
+          ref.read(adServiceProvider).onScreenChanged();
+        }
+      }),
+    ],
     redirect: (context, state) =>
         authRedirect(authState.value, state.matchedLocation),
     routes: [

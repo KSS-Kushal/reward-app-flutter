@@ -33,6 +33,9 @@ abstract final class ApiEndpoints {
   static const scratchCard = '/rewards/scratch-card';
   static String scratchCardReveal(String cardId) =>
       '/rewards/scratch-card/$cardId/reveal';
+  static const adsConfig = '/ads/config';
+  static String rewardClaimComplete(String claimId) =>
+      '/rewards/claims/$claimId/complete';
   static const captcha = '/rewards/captcha';
   static String captchaSubmit(String challengeId) =>
       '/rewards/captcha/$challengeId/submit';

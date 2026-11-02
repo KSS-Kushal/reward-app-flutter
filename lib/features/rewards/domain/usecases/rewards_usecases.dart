@@ -1,6 +1,8 @@
+import '../../../../core/ads/ad_models.dart';
 import '../../../../core/errors/errors.dart';
 import '../entities/captcha.dart';
 import '../entities/check_in.dart';
+import '../entities/reward_claim.dart';
 import '../entities/reward_summary.dart';
 import '../entities/reward_task.dart';
 import '../entities/scratch_card.dart';
@@ -39,7 +41,49 @@ class ClaimCheckIn {
   const ClaimCheckIn(this._repository);
   final RewardsRepository _repository;
 
-  Future<CheckInResult> call() => _repository.claimCheckIn();
+  Future<PendingReward> call() => _repository.claimCheckIn();
+}
+
+/// Collects a [PendingReward] after its rewarded ad.
+///
+/// The backend may confirm the ad through the ad network's server-to-server
+/// callback, which can arrive a few seconds after the ad closes. Until then
+/// it answers `AD_NOT_VERIFIED`, and this use case retries a few times.
+class CompleteRewardClaim {
+  const CompleteRewardClaim(
+    this._repository, {
+    this.retryDelays = const [
+      Duration(seconds: 2),
+      Duration(seconds: 3),
+      Duration(seconds: 5),
+    ],
+  });
+
+  final RewardsRepository _repository;
+  final List<Duration> retryDelays;
+
+  static bool isNotVerified(Object error) =>
+      error is AppException &&
+      error.code?.toLowerCase().replaceAll('_', '') == 'adnotverified';
+
+  Future<ClaimedReward> call({
+    required PendingReward reward,
+    required AdUnit adUnit,
+    required AdPlacement placement,
+  }) async {
+    for (var attempt = 0; ; attempt++) {
+      try {
+        return await _repository.completeRewardClaim(
+          claimId: reward.claimId,
+          adUnit: adUnit,
+          placement: placement,
+        );
+      } on Object catch (error) {
+        if (!isNotVerified(error) || attempt >= retryDelays.length) rethrow;
+        await Future<void>.delayed(retryDelays[attempt]);
+      }
+    }
+  }
 }
 
 class GetSpinWheel {

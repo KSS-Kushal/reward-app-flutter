@@ -15,12 +15,13 @@ The backend is **not built yet**. Every feature runs against realistic in-memory
 5. [Environments and configuration](#environments-and-configuration)
 6. [Running and building](#running-and-building)
 7. [Google Sign-In setup](#google-sign-in-setup)
-8. [Mock API architecture](#mock-api-architecture)
-9. [Connecting the real API](#connecting-the-real-api)
-10. [Adding a new feature](#adding-a-new-feature)
-11. [Testing](#testing)
-12. [Coding conventions](#coding-conventions)
-13. [Security notes](#security-notes)
+8. [Ads (AdMob + Unity)](#ads-admob--unity)
+9. [Mock API architecture](#mock-api-architecture)
+10. [Connecting the real API](#connecting-the-real-api)
+11. [Adding a new feature](#adding-a-new-feature)
+12. [Testing](#testing)
+13. [Coding conventions](#coding-conventions)
+14. [Security notes](#security-notes)
 
 ---
 
@@ -180,6 +181,10 @@ All configuration is in `lib/app/config/` and is set with `--dart-define`:
 | `API_BASE_URL` | per environment (see `api_config.dart`) | Overrides the backend base URL |
 | `USE_MOCK_API` | `true` | `false` switches every repository to the real API |
 | `GOOGLE_SERVER_CLIENT_ID` | *(empty)* | OAuth **web** client id used to get Google ID tokens |
+| `ADS_ENABLED` | `true` | `false` turns every ad off (rewards then need no ad) |
+| `ADMOB_APP_ID` | AdMob test app | AdMob **app** id (`ca-app-pub-…~…`). Read by Gradle into the manifest; the only ad id that can't come from the backend |
+
+Ad unit ids, the Unity game id, the network share, the interstitial frequency and per-screen switches come from the backend (`GET /ads/config`) and are edited in the admin panel. See [docs/ADS_BACKEND_CHANGES.md](docs/ADS_BACKEND_CHANGES.md).
 
 Environment effects:
 
@@ -248,6 +253,38 @@ LoginScreen → AuthController → SignInWithGoogle (use case)
 Without a server client id, Google returns no ID token and the app shows a friendly error. In development you can use **Continue as demo user**, which signs in against the mock backend.
 
 The backend must verify the ID token (signature, `aud` equal to the web client id, `iss`, `exp`) before issuing its own session tokens. The mock backend only decodes the token so it can display your Google name.
+
+---
+
+## Ads (AdMob + Unity)
+
+Ads are the app's main revenue, so two networks are used and **every format is split between them** by the share set in the admin panel (50/50 alternates; fallback to the other network when one has no ad). Code: `lib/core/ads/` (`AdService` is the only entry point; screens never call an SDK).
+
+**Settings come from the backend.** At every start the app fetches `GET /ads/config` (unit ids, Unity game id, shares, frequency, per-screen switches) and caches it, so admin changes apply on the next app start. Backend and admin panel work: [docs/ADS_BACKEND_CHANGES.md](docs/ADS_BACKEND_CHANGES.md).
+
+| Where | Format | Behaviour |
+| --- | --- | --- |
+| Daily check-in, spin wheel, scratch card | Rewarded | The prize popup shows the coins with **Watch ad & collect**. Coins are credited (and the check-in completed) only after the ad, by `POST /rewards/claims/{id}/complete` |
+| Captcha | Banner (bottom) + native | Native ad in the empty space below the form and the countdown (the same ad stays while they switch). After each answer, the next captcha loads after a 10 s countdown (`nextChallengeInSeconds` from the backend) |
+| Quizzes | Banner (bottom) + native | Native ad in the empty space below the question or result, sized to fit; nothing if the content fills the screen |
+| Read & Earn, Articles | Banner (bottom) | |
+| Article detail | Banner (bottom) + native | Native ad after the last paragraph |
+| Screen changes | Interstitial | Defaults: at most every 4 screen changes and 90 s after any full-screen ad, never in the first minute (admin-configurable) |
+
+Unity has no native format, so native ads always come from AdMob.
+
+**Development:** non-production builds always use Google's test units and Unity test mode, even when the backend returns real ids, but follow every other admin setting. Without a backend config (or with the mock API), AdMob test ads are used.
+
+**Production setup:**
+
+1. **AdMob:** create the Android app and four ad units (rewarded, interstitial, banner, native advanced). Put the **app id** in `env/production.json` (`ADMOB_APP_ID`) and the **unit ids** in the admin panel.
+2. **AdMob server-side verification:** on the rewarded unit, set the SSV callback URL to `https://api.kavodnik.com/api/v1/ads/callbacks/admob` (see `docs/API_SPEC.md` §6.14).
+3. **Unity:** create the project; enter the Android game id, placement ids and S2S secret in the admin panel, and enable S2S redeem callbacks to `/api/v1/ads/callbacks/unity`.
+4. **`app-ads.txt`:** publish the lines from both dashboards on your developer website.
+5. **Play Console:** declare "Contains ads" and the advertising ID in the Data safety form.
+6. **Consent:** AdMob's UMP consent form runs at start-up. It appears only where required (EEA/UK). Configure the GDPR message in AdMob → Privacy & messaging.
+
+> Never click your own live ads. Use test ids or add your device as a test device, or the AdMob account can be suspended.
 
 ---
 

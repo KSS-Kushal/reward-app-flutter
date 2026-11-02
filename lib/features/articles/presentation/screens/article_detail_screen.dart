@@ -5,6 +5,9 @@ import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_dimensions.dart';
 import '../../../../app/theme/app_shadows.dart';
 import '../../../../app/theme/app_text_styles.dart';
+import '../../../../core/ads/ad_models.dart';
+import '../../../../core/ads/widgets/banner_ad_slot.dart';
+import '../../../../core/ads/widgets/native_ad_slot.dart';
 import '../../../../core/extensions/context_extensions.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../core/widgets/app_button.dart';
@@ -25,6 +28,7 @@ class ArticleDetailScreen extends ConsumerWidget {
     final article = ref.watch(articleDetailProvider(articleId));
     return GradientPageScaffold(
       title: article.value?.category.name ?? 'Article',
+      bottomBar: const BannerAdSlot(placement: AdPlacement.article),
       body: AsyncValueView(
         value: article,
         onRetry: () => ref.invalidate(articleDetailProvider(articleId)),
@@ -128,6 +132,8 @@ class _ArticleBodyState extends ConsumerState<_ArticleBody>
                         Text(paragraph.trim(), style: AppTextStyles.bodyLarge),
                         const SizedBox(height: AppSpacing.lg),
                       ],
+                      // Native ad after the last paragraph.
+                      const NativeAdSlot(placement: AdPlacement.article),
                     ],
                   ),
                 ),
@@ -191,48 +197,45 @@ class _RewardBar extends ConsumerWidget {
         color: AppColors.surface,
         boxShadow: AppShadows.bottomNav,
       ),
-      child: SafeArea(
-        top: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(
-            AppSpacing.page,
-            AppSpacing.md,
-            AppSpacing.page,
-            AppSpacing.md,
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(hint, style: AppTextStyles.bodySmall),
-                    const SizedBox(height: AppSpacing.sm),
-                    ClipRRect(
-                      borderRadius: AppRadius.pillAll,
-                      child: LinearProgressIndicator(
-                        value: claimed ? 1 : progress.progressFor(article),
-                        minHeight: 6,
-                        backgroundColor: AppColors.border,
-                      ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.page,
+          AppSpacing.md,
+          AppSpacing.page,
+          AppSpacing.md,
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(hint, style: AppTextStyles.bodySmall),
+                  const SizedBox(height: AppSpacing.sm),
+                  ClipRRect(
+                    borderRadius: AppRadius.pillAll,
+                    child: LinearProgressIndicator(
+                      value: claimed ? 1 : progress.progressFor(article),
+                      minHeight: 6,
+                      backgroundColor: AppColors.border,
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-              const SizedBox(width: AppSpacing.lg),
-              SizedBox(
-                width: 132,
-                child: AppButton(
-                  label: claimed ? 'Claimed' : 'Claim +${article.rewardCoins}',
-                  isLoading: progress.claimStatus == ClaimStatus.claiming,
-                  onPressed: eligible && !claimed
-                      ? () => _claim(context, ref)
-                      : null,
-                ),
+            ),
+            const SizedBox(width: AppSpacing.lg),
+            SizedBox(
+              width: 132,
+              child: AppButton(
+                label: claimed ? 'Claimed' : 'Claim +${article.rewardCoins}',
+                isLoading: progress.claimStatus == ClaimStatus.claiming,
+                onPressed: eligible && !claimed
+                    ? () => _claim(context, ref)
+                    : null,
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

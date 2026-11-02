@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/route_names.dart';
 import '../../../../app/theme/app_dimensions.dart';
+import '../../../../core/ads/ad_models.dart';
+import '../../../../core/ads/widgets/banner_ad_slot.dart';
 import '../../../../core/widgets/app_empty_view.dart';
 import '../../../../core/widgets/gradient_page_scaffold.dart';
 import '../../../../shared/components/paginated_list_view.dart';
@@ -30,6 +32,7 @@ class _ArticlesScreenState extends ConsumerState<ArticlesScreen> {
 
     return GradientPageScaffold(
       title: 'Articles',
+      bottomBar: const BannerAdSlot(placement: AdPlacement.article),
       body: Column(
         children: [
           SizedBox(
