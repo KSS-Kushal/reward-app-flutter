@@ -3,18 +3,29 @@ import 'package:dio/dio.dart';
 import '../../storage/token_storage.dart';
 import '../../utils/app_logger.dart';
 import '../session_events.dart';
+import '../token_refresher.dart';
 
-/// Attaches the bearer token to outgoing requests and reports `401`s.
+/// Attaches the bearer token to outgoing requests and recovers from `401`s.
+///
+/// A `401` refreshes the tokens and retries the request once. The session
+/// ends only when the backend refuses the refresh token. Network or server
+/// trouble while refreshing keeps the session, and a request that still gets
+/// a `401` with fresh tokens fails alone.
 ///
 /// Requests can opt out (e.g. the login call) with
 /// `Options(extra: {AuthInterceptor.skipAuthKey: true})`.
 class AuthInterceptor extends Interceptor {
-  AuthInterceptor({required this._tokenStorage, required this._sessionEvents});
+  AuthInterceptor({
+    required this._tokenStorage,
+    required this._sessionEvents,
+    required this._refresher,
+  });
 
   static const skipAuthKey = 'skipAuth';
 
   final TokenStorage _tokenStorage;
   final SessionEvents _sessionEvents;
+  final TokenRefresher _refresher;
 
   @override
   Future<void> onRequest(
@@ -36,14 +47,51 @@ class AuthInterceptor extends Interceptor {
     ErrorInterceptorHandler handler,
   ) async {
     final isUnauthorized = err.response?.statusCode == 401;
-    final skipped = err.requestOptions.extra[skipAuthKey] == true;
-    if (isUnauthorized && !skipped) {
-      // A token refresh flow (ApiEndpoints.refreshToken) can be added here
-      // once the backend supports it. Until then the session simply ends.
-      AppLogger.warning('Received 401, ending session', tag: 'Auth');
-      await _tokenStorage.clear();
-      _sessionEvents.notifySessionExpired();
+    if (!isUnauthorized || err.requestOptions.extra[skipAuthKey] == true) {
+      handler.next(err);
+      return;
     }
-    handler.next(err);
+
+    // Tokens changed while this request was on its way: just use the new ones.
+    if (await _sentOutdatedToken(err.requestOptions)) {
+      await _retry(err.requestOptions, handler);
+      return;
+    }
+
+    switch (await _refresher.refresh()) {
+      case TokenRefreshResult.refreshed:
+        await _retry(err.requestOptions, handler);
+      case TokenRefreshResult.rejected:
+        AppLogger.warning('Refresh rejected, ending session', tag: 'Auth');
+        await _tokenStorage.clear();
+        _sessionEvents.notifySessionExpired();
+        handler.next(err);
+      case TokenRefreshResult.unavailable:
+        // Reported as a connection problem, so callers keep the session.
+        handler.next(
+          DioException.connectionError(
+            requestOptions: err.requestOptions,
+            reason: 'Token refresh is unavailable',
+            error: err,
+          ),
+        );
+    }
+  }
+
+  Future<bool> _sentOutdatedToken(RequestOptions request) async {
+    final current = await _tokenStorage.readAccessToken();
+    if (current == null || current.isEmpty) return false;
+    return request.headers['Authorization'] != 'Bearer $current';
+  }
+
+  Future<void> _retry(
+    RequestOptions request,
+    ErrorInterceptorHandler handler,
+  ) async {
+    try {
+      handler.resolve(await _refresher.retry(request));
+    } on DioException catch (error) {
+      handler.next(error);
+    }
   }
 }

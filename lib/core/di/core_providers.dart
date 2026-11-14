@@ -6,6 +6,7 @@ import '../network/api_client.dart';
 import '../network/interceptors/auth_interceptor.dart';
 import '../network/interceptors/logging_interceptor.dart';
 import '../network/session_events.dart';
+import '../network/token_refresher.dart';
 import '../storage/local_storage_service.dart';
 import '../storage/secure_storage_service.dart';
 import '../storage/token_storage.dart';
@@ -40,12 +41,20 @@ final sessionEventsProvider = Provider<SessionEvents>((ref) {
   return events;
 });
 
+final tokenRefresherProvider = Provider<TokenRefresher>(
+  (ref) => TokenRefresher(
+    tokenStorage: ref.watch(tokenStorageProvider),
+    dio: ApiClient.createDio(),
+  ),
+);
+
 final apiClientProvider = Provider<ApiClient>(
   (ref) => ApiClient.create(
     interceptors: [
       AuthInterceptor(
         tokenStorage: ref.watch(tokenStorageProvider),
         sessionEvents: ref.watch(sessionEventsProvider),
+        refresher: ref.watch(tokenRefresherProvider),
       ),
       if (AppConfig.enableNetworkLogs) LoggingInterceptor(),
     ],

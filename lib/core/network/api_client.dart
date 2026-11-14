@@ -21,20 +21,21 @@ typedef ResponseParser<T> = T Function(Object? data);
 class ApiClient {
   ApiClient(this._dio);
 
-  /// Builds a Dio instance configured from [ApiConfig].
-  factory ApiClient.create({List<Interceptor> interceptors = const []}) {
-    final dio = Dio(
-      BaseOptions(
-        baseUrl: ApiConfig.baseUrl,
-        connectTimeout: ApiConfig.connectTimeout,
-        receiveTimeout: ApiConfig.receiveTimeout,
-        sendTimeout: ApiConfig.sendTimeout,
-        contentType: Headers.jsonContentType,
-        headers: const {'Accept': 'application/json'},
-      ),
-    )..interceptors.addAll(interceptors);
-    return ApiClient(dio);
-  }
+  /// Builds a client from [ApiConfig] with the given [interceptors].
+  factory ApiClient.create({List<Interceptor> interceptors = const []}) =>
+      ApiClient(createDio()..interceptors.addAll(interceptors));
+
+  /// A Dio instance configured from [ApiConfig], without interceptors.
+  static Dio createDio() => Dio(
+    BaseOptions(
+      baseUrl: ApiConfig.baseUrl,
+      connectTimeout: ApiConfig.connectTimeout,
+      receiveTimeout: ApiConfig.receiveTimeout,
+      sendTimeout: ApiConfig.sendTimeout,
+      contentType: Headers.jsonContentType,
+      headers: const {'Accept': 'application/json'},
+    ),
+  );
 
   final Dio _dio;
 

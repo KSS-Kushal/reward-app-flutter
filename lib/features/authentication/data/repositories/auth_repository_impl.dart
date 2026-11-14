@@ -78,8 +78,10 @@ class AuthRepositoryImpl implements AuthRepository {
     } on UnauthorizedException {
       await _local.clear();
       return null;
-    } on NetworkException {
-      // Offline start: trust the cached user; requests will re-validate.
+    } on AppException catch (error) {
+      // Offline or server trouble says nothing about the session: keep it and
+      // trust the cached user; later requests re-validate.
+      AppLogger.warning('Using cached user', tag: _tag, error: error);
       return _local.readCachedUser();
     }
   }

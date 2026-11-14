@@ -8,6 +8,7 @@ import 'package:kavodnik/core/network/api_client.dart';
 import 'package:kavodnik/core/network/api_response.dart';
 import 'package:kavodnik/core/network/interceptors/auth_interceptor.dart';
 import 'package:kavodnik/core/network/session_events.dart';
+import 'package:kavodnik/core/network/token_refresher.dart';
 import 'package:kavodnik/core/storage/secure_storage_service.dart';
 import 'package:kavodnik/core/storage/token_storage.dart';
 import 'package:kavodnik/core/utils/json_reader.dart';
@@ -54,7 +55,15 @@ void main() {
     final dio = Dio(BaseOptions(baseUrl: 'https://api.test'))
       ..httpClientAdapter = adapter
       ..interceptors.add(
-        AuthInterceptor(tokenStorage: tokens, sessionEvents: events),
+        AuthInterceptor(
+          tokenStorage: tokens,
+          sessionEvents: events,
+          refresher: TokenRefresher(
+            tokenStorage: tokens,
+            dio: Dio(BaseOptions(baseUrl: 'https://api.test'))
+              ..httpClientAdapter = adapter,
+          ),
+        ),
       );
     return (ApiClient(dio), adapter);
   }
@@ -88,7 +97,7 @@ void main() {
     expect(adapter.lastRequest?.headers.containsKey('Authorization'), isFalse);
   });
 
-  test('401 becomes UnauthorizedException and ends the session', () async {
+  test('401 without a refresh token ends the session', () async {
     await tokens.saveTokens(accessToken: 'expired');
     final expired = expectLater(events.onSessionExpired, emits(null));
     final (api, _) = client(401, {'message': 'Token expired'});

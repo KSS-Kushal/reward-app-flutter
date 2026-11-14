@@ -29,10 +29,7 @@ void main() {
           ...testOverrides(),
           rewardsRemoteDataSourceProvider.overrideWithValue(source),
         ],
-        child: MaterialApp(
-          theme: AppTheme.light,
-          home: const CaptchaScreen(),
-        ),
+        child: MaterialApp(theme: AppTheme.light, home: const CaptchaScreen()),
       ),
     );
     await tester.pump();

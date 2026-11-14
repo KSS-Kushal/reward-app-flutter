@@ -25,6 +25,16 @@ class _RejectingRemote implements AuthRemoteDataSource {
   Future<void> logout() async {}
 }
 
+/// `getCurrentUser` fails with [error].
+class _FailingRemote extends _RejectingRemote {
+  _FailingRemote(this.error);
+
+  final AppException error;
+
+  @override
+  Future<UserModel> getCurrentUser() => throw error;
+}
+
 void main() {
   setUpAll(disableMockLatency);
 
@@ -74,6 +84,23 @@ void main() {
     expect(restored, isNull);
     expect(await storage.read(StorageKeys.accessToken), isNull);
   });
+
+  for (final (name, error) in [
+    ('a server error', const ServerException(statusCode: 502)),
+    ('being offline', const NetworkException()),
+    ('an unknown failure', const UnknownException()),
+  ]) {
+    test('$name at app start keeps the session', () async {
+      final repo = repository();
+      final user = await repo.signInAsDemoUser();
+      final token = await storage.read(StorageKeys.accessToken);
+
+      final restored = await repository(_FailingRemote(error)).restoreSession();
+
+      expect(restored?.id, user.id);
+      expect(await storage.read(StorageKeys.accessToken), token);
+    });
+  }
 
   test('backend rejection signs out of Google again', () async {
     await expectLater(
