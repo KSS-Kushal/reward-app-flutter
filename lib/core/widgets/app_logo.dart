@@ -5,11 +5,15 @@ import '../../app/theme/app_colors.dart';
 import '../../app/theme/app_dimensions.dart';
 import '../../app/theme/app_shadows.dart';
 import '../../app/theme/app_text_styles.dart';
-import 'coin_icon.dart';
 
-/// Brand mark: coin badge with the app name.
+/// Brand mark: the app logo with the app name.
 class AppLogo extends StatelessWidget {
   const AppLogo({this.size = 84, this.showName = true, super.key});
+
+  static const _asset = 'assets/images/app_logo.png';
+
+  /// Corner radius of the logo artwork, as a fraction of its size.
+  static const _cornerRatio = 0.24;
 
   final double size;
   final bool showName;
@@ -19,16 +23,17 @@ class AppLogo extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Container(
-          width: size,
-          height: size,
+        DecoratedBox(
           decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(size * 0.28),
+            borderRadius: BorderRadius.circular(size * _cornerRatio),
             boxShadow: AppShadows.card,
           ),
-          alignment: Alignment.center,
-          child: CoinIcon(size: size * 0.6),
+          child: Image.asset(
+            _asset,
+            width: size,
+            height: size,
+            semanticLabel: AppConfig.appName,
+          ),
         ),
         if (showName) ...[
           const SizedBox(height: AppSpacing.lg),

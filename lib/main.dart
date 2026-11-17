@@ -53,7 +53,7 @@ Future<void> main() async {
   );
 
   runApp(
-    UncontrolledProviderScope(container: container, child: const KavodnikApp()),
+    UncontrolledProviderScope(container: container, child: const EarnzaApp()),
   );
 
   // Ad SDKs start in the background; the app never waits for them.

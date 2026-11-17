@@ -2,7 +2,7 @@ import 'environment.dart';
 
 /// Application-wide configuration resolved from `--dart-define` values.
 abstract final class AppConfig {
-  static const String appName = 'Kavodnik';
+  static const String appName = 'Earnza';
 
   static Environment get environment => Environment.current;
 
@@ -30,5 +30,5 @@ abstract final class AppConfig {
   static bool get enableNetworkLogs => !environment.isProduction;
 
   static const String playStoreUrl =
-      'https://play.google.com/store/apps/details?id=com.kavodnik.app';
+      'https://play.google.com/store/apps/details?id=com.kss.earnza';
 }

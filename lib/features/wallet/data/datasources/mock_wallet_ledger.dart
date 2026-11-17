@@ -133,7 +133,7 @@ class MockWalletLedger {
       source: TransactionSource.bonus,
       title: 'Welcome bonus',
       amount: 500,
-      description: 'Thanks for joining Kavodnik!',
+      description: 'Thanks for joining Earnza!',
       at: ago(days: 30),
     );
     credit(

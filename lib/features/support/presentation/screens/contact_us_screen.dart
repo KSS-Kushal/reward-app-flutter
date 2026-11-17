@@ -74,7 +74,7 @@ class ContactUsScreen extends ConsumerWidget {
               value: data.email,
               onTap: () => _open(
                 context,
-                () => links.sendEmail(data.email, subject: 'Kavodnik support'),
+                () => links.sendEmail(data.email, subject: 'Earnza support'),
               ),
             ),
             if (data.phone != null)

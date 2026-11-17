@@ -1,6 +1,6 @@
-# Kavodnik
+# Earnza
 
-Kavodnik is an Android rewards app built with Flutter. Users sign in with Google, complete daily activities (check-in, spin wheel, scratch card, captcha), take quizzes, read articles, shop through partner stores, invite friends and redeem the coins they earn.
+Earnza is an Android rewards app built with Flutter. Users sign in with Google, complete daily activities (check-in, spin wheel, scratch card, captcha), take quizzes, read articles, shop through partner stores, invite friends and redeem the coins they earn.
 
 The backend is **not built yet**. Every feature runs against realistic in-memory mock data sources that sit behind the same interfaces the real API will use. Moving to the real backend is a data-layer change. Screens, widgets, navigation and state handling stay as they are.
 
@@ -233,7 +233,7 @@ The app uses `google_sign_in` 7, which on Android runs on Credential Manager. No
 
 1. In [Google Cloud Console](https://console.cloud.google.com/apis/credentials), create (or pick) a project and configure the OAuth consent screen.
 2. Create an **Android** OAuth client:
-   * Package name: `com.kavodnik.app`
+   * Package name: `com.kss.earnza`
    * SHA-1 of the signing certificate. Debug: `cd android && ./gradlew signingReport`. Release: your upload key, and add the **Play App Signing** SHA-1 as a separate Android client.
 3. Create a **Web application** OAuth client. Its client id is the *server client id*. Your backend uses the same id to verify ID tokens.
 4. Run the app with `--dart-define=GOOGLE_SERVER_CLIENT_ID=<web client id>`.

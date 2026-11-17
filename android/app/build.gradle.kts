@@ -40,7 +40,7 @@ if (dartDefines["ENV"] == "production" && admobAppId == admobTestAppId) {
 }
 
 android {
-    namespace = "com.kavodnik.app"
+    namespace = "com.kss.earnza"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -50,7 +50,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.kavodnik.app"
+        applicationId = "com.kss.earnza"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode

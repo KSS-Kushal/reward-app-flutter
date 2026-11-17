@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Guidance for AI coding agents working on **Kavodnik**, an Android-only Flutter rewards app (users earn coins through check-in, spin, scratch, captcha, quizzes, articles, shopping and referrals, then redeem them).
+Guidance for AI coding agents working on **Earnza** (Android package `com.kss.earnza`; the Dart package is still `kavodnik`), an Android-only Flutter rewards app (users earn coins through check-in, spin, scratch, captcha, quizzes, articles, shopping and referrals, then redeem them).
 
 Read this first. `README.md` has the full detail (setup, env defines, Google Sign-In, ads, real-API migration). `docs/API_SPEC.md` is the backend contract and `docs/ADS_BACKEND_CHANGES.md` covers ad settings. Both are git-ignored and exist only locally.
 

@@ -142,7 +142,7 @@ class ArticleMockDataSource implements ArticleRemoteDataSource {
       summary: summary,
       content: _body(title, summary),
       category: category,
-      author: const ['Kavodnik Team', 'Ananya Iyer', 'Rohit Menon'][index % 3],
+      author: const ['Earnza Team', 'Ananya Iyer', 'Rohit Menon'][index % 3],
       publishedAt: now.subtract(Duration(days: index, hours: index * 3)),
       readTimeMinutes: minutes,
       imageUrl: 'https://picsum.photos/seed/kavodnik$index/800/450',

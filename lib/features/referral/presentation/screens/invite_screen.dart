@@ -139,7 +139,7 @@ class _ReferralHero extends ConsumerWidget {
             backgroundColor: AppColors.inviteRing,
             onPressed: () => ref
                 .read(externalLinkServiceProvider)
-                .share(info.shareMessage, subject: 'Join me on Kavodnik'),
+                .share(info.shareMessage, subject: 'Join me on Earnza'),
           ),
         ],
       ),

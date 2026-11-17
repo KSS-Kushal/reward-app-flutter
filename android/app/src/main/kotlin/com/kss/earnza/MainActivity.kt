@@ -1,4 +1,4 @@
-package com.kavodnik.app
+package com.kss.earnza
 
 import io.flutter.embedding.android.FlutterActivity
 

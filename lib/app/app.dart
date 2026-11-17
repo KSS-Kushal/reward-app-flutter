@@ -5,8 +5,8 @@ import 'config/app_config.dart';
 import 'router/app_router.dart';
 import 'theme/app_theme.dart';
 
-class KavodnikApp extends ConsumerWidget {
-  const KavodnikApp({super.key});
+class EarnzaApp extends ConsumerWidget {
+  const EarnzaApp({super.key});
 
   /// Text scaling is honoured but capped so layouts stay usable.
   static const _maxTextScale = 1.3;

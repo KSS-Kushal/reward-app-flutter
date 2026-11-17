@@ -102,7 +102,7 @@ class GoogleSignInService implements GoogleAuthService {
             'usually a configuration problem:\n'
             '   • Android OAuth client SHA-1 does not match this build '
             '(run: cd android && ./gradlew signingReport)\n'
-            '   • Android OAuth client package name is not com.kavodnik.app\n'
+            '   • Android OAuth client package name is not com.kss.earnza\n'
             '   • serverClientId is not the Web client id of the same project\n'
             '   • OAuth consent screen is in "Testing" and this Google account '
             'is not added as a test user\n'
@@ -118,7 +118,7 @@ class GoogleSignInService implements GoogleAuthService {
         case _ when _isConsoleMisconfiguration(error):
           AppLogger.warning(
             'Google Cloud setup mismatch. The Web client (serverClientId) and '
-            'the Android client (package com.kavodnik.app + this build\'s '
+            'the Android client (package com.kss.earnza + this build\'s '
             'SHA-1) must be in the SAME project, and the OAuth consent screen '
             'must be configured.',
             tag: _tag,

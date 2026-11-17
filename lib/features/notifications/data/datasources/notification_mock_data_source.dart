@@ -44,7 +44,7 @@ class NotificationMockDataSource implements NotificationRemoteDataSource {
       ),
       AppNotificationModel(
         id: 'n5',
-        title: 'Welcome to Kavodnik',
+        title: 'Welcome to Earnza',
         body: 'We added 500 welcome coins to your wallet. Happy earning!',
         type: NotificationType.system,
         createdAt: t.subtract(const Duration(days: 30)),

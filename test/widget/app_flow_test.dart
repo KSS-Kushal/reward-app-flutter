@@ -49,7 +49,7 @@ void main() {
             _UserAwareMock(store, _testUser),
           ),
         ],
-        child: const KavodnikApp(),
+        child: const EarnzaApp(),
       ),
     );
     await _pumpFor(tester);
@@ -64,7 +64,7 @@ void main() {
     // Home, built from the Figma sections.
     expect(find.byType(HomeScreen), findsOneWidget);
     expect(find.text('Hi, Ritik', findRichText: true), findsOneWidget);
-    expect(find.text('Welcome to Kavodnik'), findsOneWidget);
+    expect(find.text('Welcome to Earnza'), findsOneWidget);
     for (final label in ['Rate Us', 'Leader Board', 'Contact Us', 'Invite']) {
       expect(find.text(label), findsOneWidget);
     }

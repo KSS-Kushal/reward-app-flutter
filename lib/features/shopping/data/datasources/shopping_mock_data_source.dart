@@ -33,7 +33,7 @@ class ShoppingMockDataSource implements ShoppingRemoteDataSource {
   ];
 
   static const _terms = [
-    'Rewards are tracked only when you open the product from Kavodnik.',
+    'Rewards are tracked only when you open the product from Earnza.',
     'Complete your purchase in the same session.',
     'Rewards are confirmed after the return window closes.',
     'Using coupons not listed here may void rewards.',
@@ -125,7 +125,7 @@ class ShoppingMockDataSource implements ShoppingRemoteDataSource {
       rewardText: 'Up to ${cashback.toStringAsFixed(0)}% back as coins',
       cashbackPercent: cashback,
       description:
-          'Buy on $name through Kavodnik and earn up to '
+          'Buy on $name through Earnza and earn up to '
           '${cashback.toStringAsFixed(0)}% back as coins on eligible orders.',
       // Mock only: the platform's search URL. Product links append the name.
       trackingUrl: searchUrl,

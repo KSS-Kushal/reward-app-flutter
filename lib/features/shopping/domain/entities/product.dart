@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 /// A product sold on a partner platform. Buying goes through [affiliateUrl],
-/// so the purchase is attributed to Kavodnik (and to the user, when the
+/// so the purchase is attributed to Earnza (and to the user, when the
 /// backend puts a user sub-id in the link).
 @immutable
 class Product {

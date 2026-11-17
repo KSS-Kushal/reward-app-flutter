@@ -21,7 +21,7 @@ class ReferralMockDataSource implements ReferralRemoteDataSource {
       code: code,
       shareLink: link,
       shareMessage:
-          'Join me on Kavodnik and earn rewards every day! Use my code '
+          'Join me on Earnza and earn rewards every day! Use my code '
           '$code to get 100 bonus coins: $link',
       rewardPerReferral: 250,
       totalInvited: 4,

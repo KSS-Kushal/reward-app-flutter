@@ -62,7 +62,7 @@ class LoginScreen extends ConsumerWidget {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         const Text(
-                          'Welcome to Kavodnik',
+                          'Welcome to Earnza',
                           textAlign: TextAlign.center,
                           style: AppTextStyles.headlineMedium,
                         ),
